@@ -1,0 +1,16 @@
+# directory
+.idea
+.pytest_cache
+__pycache__
+output
+test
+venv
+
+# file
+**.egg-info
+*.license
+*.data
+*.log*
+*.exe
+*.spec
+~$*
