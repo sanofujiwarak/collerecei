@@ -38,4 +38,4 @@
 [https://collerecei.tssol.net/](https://collerecei.tssol.net/)
 
 ## ドキュメント
-[https://collerecei-doc.tssol.net/docs/](https://collerecei-doc.tssol.net/docs/)
+[https://collerecei.tssol.net/docs/](https://collerecei.tssol.net/docs/)
