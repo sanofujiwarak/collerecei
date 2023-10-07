@@ -5,7 +5,7 @@ from logging import getLogger
 from helium import *
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-from services.utils import save_screenshot
+from ..services.utils import save_screenshot
 
 logger = getLogger(__name__)
 

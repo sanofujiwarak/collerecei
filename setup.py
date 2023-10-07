@@ -4,12 +4,12 @@ import os
 
 setup(
     name='collerecei',
-    version='2023.4',
+    version='2023.10',
     license='PolyForm Shield License 1.0.0',
     description='領収書自動取得ツール これれし',
     author='sanofujiwarak',
     author_email='7044283+sanofujiwarak@users.noreply.github.com',
-    url='',
+    url='https://collerecei.tssol.net',
     classifiers=[
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",

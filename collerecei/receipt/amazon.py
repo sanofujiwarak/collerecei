@@ -6,7 +6,7 @@ import re
 from helium import *
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 
-from services.utils import save_screenshot
+from ..services.utils import save_screenshot
 
 logger = getLogger(__name__)
 
@@ -112,7 +112,7 @@ def account_fixup(d, p):
     logger.info(f'{d.title} {url}')
     save_screenshot(d, p)
     if 'EメールアドレスをAmazonに追加する' in d.title:
-        click('スキップ')
+        click('後で')
 
 
 def open_order_history(d, p):
@@ -139,24 +139,28 @@ def open_order_history(d, p):
 def get_order_data(p, d, i):
     '''
     1注文の領収書データを取得
+    :param dict p: 設定
     :param pselenium.ChromePlus d:
     :param int i: 注文の位置
     :return: dict
     '''
-    base_xpath = f'/html/body/div[1]/div[2]/div[1]/div[5]/div[{i}]/div[1]/' \
-        if p['licensed'] and p.get('target_year') else \
-        f'/html/body/div[1]/section/div[1]/div[{i+6}]/div/div[1]/'
-    order_date = d.find_element_by_xpath(
-        f'{base_xpath}div/div/div/div[1]/div/div[1]/div[2]/span'
+    r = {}
+    if p['licensed'] and p.get('target_year'):
+        # 年 表示
+        order_card = f"/html/body/div[1]/div[1]/div[1]/div[5]/div[{i}]/"
+    else:
+        # 過去3か月 表示
+        order_card = f"/html/body/div[1]/section/div[1]/div[{i + 7}]/div/"
+
+    r["注文日"] = d.find_element_by_xpath(
+        f'{order_card}div[1]/div/div/div/div[1]/div/div[1]/div[2]/span'
     ).text
-    order_no = d.find_element_by_xpath(
-        f'{base_xpath}div/div/div/div[2]/div[1]/span[2]/bdi'
+    r["注文番号"] = d.find_element_by_xpath(
+        f'{order_card}div[1]/div/div/div/div[2]/div[1]/span[2]/bdi'
     ).text
-    receipt_url = d.find_element_by_xpath(
-        f'{base_xpath}div/div/div/div[2]/div[2]/ul/span[2]/a'
-    ).get_attribute('href')
-    r = {'date': order_date, 'no': order_no, 'url': receipt_url}
-    logger.debug(f'注文日：{r["date"]}, 注文番号：{r["no"]}, URL：{r["url"]}')
+    r["領収書"] = (f'https://www.amazon.co.jp/gp/css/summary/print.html/'
+                   f'ref=oh_aui_ajax_invoice?ie=UTF8&orderID={r["注文番号"]}')
+    logger.debug(r)
     return r
 
 
@@ -173,12 +177,12 @@ def validate_order(p, r):
         return True
 
     # 注文日の年月が対象月年月と同じかチェック
-    s = re.search(r'(20[0-9]{2})年([1]?[0-9])月', r['date'])
+    s = re.search(r'(20[0-9]{2})年([1]?[0-9])月', r['注文日'])
     if s and p['target_year'] == s.group(1) and (
             p['target_month'] == '' or p['target_month'] == s.group(2)
     ):
         return True
-    logger.info(f'データ取得対象外の注文です {r["date"]}, {r["no"]}')
+    logger.info(f'データ取得対象外の注文です {r["注文日"]}, {r["注文番号"]}')
     return False
 
 
@@ -196,11 +200,11 @@ def collect_receipt_url(d, p, rl):
         try:
             r = get_order_data(p, d, i)
             if validate_order(p, r):
-                logger.debug(f'取得対象のURL={r["url"]}')
+                logger.debug(f'取得対象のURL={r["領収書"]}')
                 rl.append(r)
-        except NoSuchElementException:
+        except NoSuchElementException as e:
             # ページ途中で注文が無くなった場合
-            pass
+            logger.debug(e)
 
     if p['licensed']:
         try:
@@ -224,10 +228,10 @@ def get_receipt_pdf(d, rl):
     :return:
     '''
     for i in rl:
-        d.get(i['url'])
+        d.get(i['領収書'])
         url = d.current_url
         logger.info(f'{d.title} {url}')
-        d.save_pdf(f"Amazon.co.jp_{i['no']}.pdf")
+        d.save_pdf(f"Amazon.co.jp_{i['注文番号']}.pdf")
 
 
 def main(d, p):
