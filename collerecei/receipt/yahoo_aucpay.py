@@ -87,6 +87,22 @@ def yahoo_card(d, p):
     d.url_changes(url)
 
 
+def lyp_premium(d, p):
+    '''
+    :param pselenium.ChromePlus d:
+    :param dict p: 設定
+    '''
+    try:
+        d.title_is('LYPプレミアム - LINE・ヤフー・PayPayがもっと楽しく、もっとおトクに')
+    except TimeoutException:
+        return
+    url = d.current_url
+    logger.info(f'{d.title} {url}')
+    save_screenshot(d, p)
+    click('あとで')
+    d.url_changes(url)
+
+
 def payment_detail_list(d, p, l):
     '''
     :param pselenium.ChromePlus d:
@@ -182,8 +198,16 @@ def main(d, p):
     # 支払い一覧
     go_to('https://aucpay.yahoo.co.jp/detail-front/PaymentDetailList')
     login(d, p)
-    confirmation_email(d, p)
-    yahoo_card(d, p)
+
+    # TODO: 未確認
+    # 広告等への対処
+    try:
+        d.title_is('支払い一覧 - Yahoo!かんたん決済')
+    except TimeoutException:
+        go_to('https://aucpay.yahoo.co.jp/detail-front/PaymentDetailList')
+        # confirmation_email(d, p)
+        # yahoo_card(d, p)
+        # lyp_premium(d, p)
 
     # 明細のURL収集
     l = []

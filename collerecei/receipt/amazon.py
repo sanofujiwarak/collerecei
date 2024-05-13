@@ -51,12 +51,6 @@ def login(d, p):
     logger.info(f'{d.title} {url}')
     d.send_keys('ap_email', p['email'])
     logger.info('メールアドレスを入力しました')
-    save_screenshot(d, p)
-    d.click('continue')
-    d.url_changes(url)
-
-    url = d.current_url
-    logger.info(f'{d.title} {url}')
     d.send_keys('ap_password', p['password'])
     logger.info('パスワードを入力しました')
     save_screenshot(d, p)
@@ -158,8 +152,13 @@ def get_order_data(p, d, i):
     r["注文番号"] = d.find_element_by_xpath(
         f'{order_card}div[1]/div/div/div/div[2]/div[1]/span[2]/bdi'
     ).text
-    r["領収書"] = (f'https://www.amazon.co.jp/gp/css/summary/print.html/'
-                   f'ref=oh_aui_ajax_invoice?ie=UTF8&orderID={r["注文番号"]}')
+    r["領収書"] = (
+        f'https://www.amazon.co.jp/gp/digital/your-account/order-summary.html/'
+        f'ref=oh_aui_ajax_dpi?ie=UTF8&orderID={r["注文番号"]}&print=1'
+    ) if r["注文番号"][0] == 'D' else (
+        f'https://www.amazon.co.jp/gp/css/summary/print.html/'
+        f'ref=oh_aui_ajax_invoice?ie=UTF8&orderID={r["注文番号"]}'
+    )
     logger.debug(r)
     return r
 

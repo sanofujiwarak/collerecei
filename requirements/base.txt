@@ -1,2 +1,2 @@
 PySimpleGUI==4.43.0
-pselenium==0.2
+pselenium==0.3
