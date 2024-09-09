@@ -51,6 +51,10 @@ def login(d, p):
     logger.info(f'{d.title} {url}')
     d.send_keys('ap_email', p['email'])
     logger.info('メールアドレスを入力しました')
+    save_screenshot(d, p)
+    click('次に進む')
+    d.url_changes(url)
+
     d.send_keys('ap_password', p['password'])
     logger.info('パスワードを入力しました')
     save_screenshot(d, p)
