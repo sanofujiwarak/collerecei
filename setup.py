@@ -2,9 +2,11 @@
 from setuptools import find_packages, setup
 import os
 
+from collerecei.version import __version__
+
 setup(
     name='collerecei',
-    version='2023.10',
+    version=__version__,
     license='PolyForm Shield License 1.0.0',
     description='領収書自動取得ツール これれし',
     author='sanofujiwarak',

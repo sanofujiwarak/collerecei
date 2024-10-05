@@ -62,9 +62,9 @@ def login(d, p):
     reinput_password(d, p, url)
 
 
-def onetime_password(d, p):
+def confirmation_code(d, p):
     '''
-    ワンタイムパスワードに対応
+    確認コード入力
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :return:
@@ -72,31 +72,21 @@ def onetime_password(d, p):
     url = d.current_url
     logger.info(f'{d.title} {url}')
     try:
-        # 「」ボタン押下
-        d.find_element_by_xpath(
-            '//*[@id="authportal-main-section"]/div[2]/div/div[1]/div/form/h2'
-        )
-        save_screenshot(d, p)
-        d.click('continue')
+        # 「確認コード」の文言を探す
+        click('確認コード')
 
-        # コードを入力
+        # 確認コードを入力
         url = d.current_url
         logger.info(f'{d.title} {url}')
-        code = input('セキュリティコードを入力してください -> ')
+        code = input('確認コードを入力してください -> ')
         logger.debug(code)
-        d.send_keys(
-            '//*[@id="cvf-page-content"]/div/div/div[1]/form/div[2]/input',
-            code,
-            'xpath'
-        )
-        # 「続行」ボタン押下
+        d.send_keys('input-box-otp', code)
         save_screenshot(d, p)
-        d.click('//*[@id="a-autoid-0"]/span/input', 'xpath')
+        click('コードを送信する')
         d.url_changes(url)
 
     except NoSuchElementException:
-        # セキュリティコード入力不要
-        logger.info('セキュリティコード入力不要')
+        logger.info('確認コード入力不要')
 
 
 def account_fixup(d, p):
@@ -247,7 +237,7 @@ def main(d, p):
     set_driver(d)
     go_to('https://www.amazon.co.jp/gp/css/order-history')
     login(d, p)
-    onetime_password(d, p)
+    confirmation_code(d, p)
     account_fixup(d, p)
     open_order_history(d, p)
 

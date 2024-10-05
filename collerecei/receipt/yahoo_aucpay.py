@@ -38,7 +38,7 @@ def login(d, p):
     '''
     url = d.current_url
     logger.info(f'{d.title} {url}')
-    write(p['email'], into='ID/携帯電話番号/メールアドレス')
+    d.send_keys('login_handle', p['email'])
     logger.info('ID/携帯電話番号/メールアドレス を入力しました')
     save_screenshot(d, p)
     click('次へ')
