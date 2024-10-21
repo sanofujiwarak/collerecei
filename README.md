@@ -13,7 +13,7 @@
 - Yahoo!かんたん決済の支払い明細の取得
 
 ## 使い方
-1. [Releases](https://github.com/sanofujiwarak/collerecei/releases) より、実行ファイルを取得する
+1. [Releases](https://github.com/sanofujiwarak/collerecei/releases/latest) より、実行ファイルを取得する
 2. 取得したファイルを展開する
 3. 自動取得処理を実行する
 - Amazon.co.jp の場合  
@@ -39,4 +39,4 @@
 [https://collerecei.tssol.net/](https://collerecei.tssol.net/)
 
 ## ドキュメント
-[https://collerecei.tssol.net/docs/](https://collerecei.tssol.net/docs/)
+[https://docs.collerecei.tssol.net/docs/](https://docs.collerecei.tssol.net/docs/)
