@@ -1,10 +1,12 @@
 # encoding: UTF-8
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
+from os import sep
 import re
 
 from helium import *
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.by import By
 
 from ..services.utils import save_screenshot
 
@@ -12,11 +14,11 @@ logger = getLogger(__name__)
 
 
 def reinput_password(d, p, url):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :param str url:
-    '''
+    """
     try:
         d.url_changes(url)
     except TimeoutException:
@@ -31,7 +33,7 @@ def reinput_password(d, p, url):
         n = next(p["iter"])
         d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
         code = input(
-            f'{p["store_path"]}/{p["ss_prefix"]}{n}.png '
+            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
             f'を確認し、文字列を入力してください -> '
         )
         write(code, into='文字列を入力')
@@ -41,34 +43,38 @@ def reinput_password(d, p, url):
         reinput_password(d, p, url)
 
 
-def login(d, p):
-    '''
-    ログインする
+def solve_puzzle(d, p):
+    """
+    アカウント保護のため、このパズルを解いてください
     :param pselenium.ChromePlus d:
     :param dict p: 設定
-    '''
+    :return:
+    """
     url = d.current_url
     logger.info(f'{d.title} {url}')
-    d.send_keys('ap_email', p['email'])
-    logger.info('メールアドレスを入力しました')
-    save_screenshot(d, p)
-    click('次に進む')
-    d.url_changes(url)
 
-    d.send_keys('ap_password', p['password'])
-    logger.info('パスワードを入力しました')
-    save_screenshot(d, p)
-    d.click('signInSubmit')
-    reinput_password(d, p, url)
+    if 'IDを確認してください' in d.title:
+        n = next(p["iter"])
+        d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
+        puzzle = input(
+            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
+            f'を確認し、文字と数字を入力してください -> '
+        )
+        d.send_keys('cvf_captcha_input', puzzle, By.NAME)
+        logger.info('文字列を入力しました')
+        save_screenshot(d, p)
+        click('続行')
+        d.url_changes(url)
+        solve_puzzle(d, p)
 
 
 def confirmation_code(d, p):
-    '''
+    """
     確認コード入力
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :return:
-    '''
+    """
     url = d.current_url
     logger.info(f'{d.title} {url}')
     try:
@@ -85,17 +91,17 @@ def confirmation_code(d, p):
         click('コードを送信する')
         d.url_changes(url)
 
-    except NoSuchElementException:
+    except (NoSuchElementException, LookupError):
         logger.info('確認コード入力不要')
 
 
 def account_fixup(d, p):
-    '''
+    """
     EメールアドレスをAmazonに追加する
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :return:
-    '''
+    """
     url = d.current_url
     logger.info(f'{d.title} {url}')
     save_screenshot(d, p)
@@ -103,13 +109,37 @@ def account_fixup(d, p):
         click('後で')
 
 
+def login(d, p):
+    """
+    ログインする
+    :param pselenium.ChromePlus d:
+    :param dict p: 設定
+    """
+    url = d.current_url
+    logger.info(f'{d.title} {url}')
+    d.send_keys('ap_email', p['email'])
+    logger.info('メールアドレスを入力しました')
+    save_screenshot(d, p)
+    click('次に進む')
+    d.url_changes(url)
+
+    d.send_keys('ap_password', p['password'])
+    logger.info('パスワードを入力しました')
+    save_screenshot(d, p)
+    d.click('signInSubmit')
+    reinput_password(d, p, url)
+    solve_puzzle(d, p)
+    confirmation_code(d, p)
+    account_fixup(d, p)
+
+
 def open_order_history(d, p):
-    '''
+    """
     注文履歴画面を開く
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :return:
-    '''
+    """
     url = d.current_url
     logger.info(f'{d.title} {url}')
     d.title_is('注文履歴')
@@ -125,13 +155,13 @@ def open_order_history(d, p):
 
 
 def get_order_data(p, d, i):
-    '''
+    """
     1注文の領収書データを取得
     :param dict p: 設定
     :param pselenium.ChromePlus d:
     :param int i: 注文の位置
     :return: dict
-    '''
+    """
     r = {}
     if p['licensed'] and p.get('target_year'):
         # 年 表示
@@ -158,12 +188,12 @@ def get_order_data(p, d, i):
 
 
 def validate_order(p, r):
-    '''
+    """
     データ取得対象かを判断
     :param dict p: 設定
     :param dict r: order data
     :return: bool
-    '''
+    """
     if p.get('target_year') is None or p.get('target_month') is None \
             or p['target_year'] == '':
         # 対象年 または 対象月が未指定
@@ -180,13 +210,13 @@ def validate_order(p, r):
 
 
 def collect_receipt_url(d, p, rl):
-    '''
+    """
     領収書のURLを収集
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :param list rl:
     :return:
-    '''
+    """
     url = d.current_url
     logger.info(f'{d.title} {url}')
     for i in range(2, 12):
@@ -214,12 +244,12 @@ def collect_receipt_url(d, p, rl):
 
 
 def get_receipt_pdf(d, rl):
-    '''
+    """
     領収書ページをpdf化
     :param pselenium.ChromePlus d:
     :param list rl:
     :return:
-    '''
+    """
     for i in rl:
         d.get(i['領収書'])
         url = d.current_url
@@ -228,17 +258,15 @@ def get_receipt_pdf(d, rl):
 
 
 def main(d, p):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p:
     :return:
-    '''
+    """
     # 注文履歴画面を開く
     set_driver(d)
     go_to('https://www.amazon.co.jp/gp/css/order-history')
     login(d, p)
-    confirmation_code(d, p)
-    account_fixup(d, p)
     open_order_history(d, p)
 
     # 領収書のURLを収集
