@@ -1,9 +1,9 @@
 # encoding: UTF-8
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
-from os import environ, sep
+from os import environ, popen, sep
 
-from selenium.webdriver import ChromeOptions
+from helium import kill_browser
 
 import pselenium
 
@@ -31,7 +31,7 @@ def __get_webdriver(download_dir):
     environ.setdefault('APP_DOWNLOAD_DIR', download_dir)
     environ.setdefault('APP_SCREENSHOT_DIR', download_dir)
 
-    o = ChromeOptions()
+    o = pselenium.ChromeOptions()
     o.binary_location = fr'tools{sep}GoogleChromePortable{sep}GoogleChromePortable.exe'
     o.headless = True
     o.add_argument('start-maximized')
@@ -42,10 +42,13 @@ def __get_webdriver(download_dir):
     o.add_argument('disable-dev-shm-usage')
     o.add_argument('disable-browser-side-navigation')
     o.add_argument('disable-gpu')
-    o.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0')
+    o.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0')
+    o.add_argument('--lang=ja')
+    o.add_argument('--accept-encoding=gzip,deflate,br,zstd')
     o.add_experimental_option(
         'prefs',
         {
+            'intl.accept_languages': 'ja,en-US;q=0.9,en;q=0.8',
             "download.default_directory": pselenium.get_download_dir(),
             "download.prompt_for_download": False,
             "download.directory_upgrade": True,
@@ -65,4 +68,15 @@ def exec_selenium(manipulate, module_name, params):
     global DEBUG
     DEBUG = environ.get('DEBUG', False)
     d = __get_webdriver(params['store_path'])
-    pselenium.exec(d, manipulate, module_name, params)
+    try:
+        pselenium.exec(d, manipulate, module_name, params)
+    except Exception as e:
+        d.save_screenshot(f'{module_name}_error.png')
+        if DEBUG:
+            logger.error('%s: %s', type(e).__name__, e)
+            with open(f'{module_name}_error.html', 'w', encoding='utf-8') as f:
+                f.write(d.page_source)
+        raise e
+    finally:
+        kill_browser()
+        popen('taskkill /F /IM chrome.exe')

@@ -2,11 +2,11 @@
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
 from os import sep
+from time import sleep
 import re
 
 from helium import *
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.common.by import By
 
 from ..services.utils import save_screenshot
 
@@ -53,18 +53,23 @@ def solve_puzzle(d, p):
     url = d.current_url
     logger.info(f'{d.title} {url}')
 
-    if 'IDを確認してください' in d.title:
-        n = next(p["iter"])
-        d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
-        puzzle = input(
-            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
-            f'を確認し、文字と数字を入力してください -> '
-        )
-        d.send_keys('cvf_captcha_input', puzzle, By.NAME)
-        logger.info('文字列を入力しました')
-        save_screenshot(d, p)
-        click('続行')
-        d.url_changes(url)
+    n = next(p["iter"])
+    d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
+    puzzle = input(
+        f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
+        f'を確認し、文字と数字を入力してください -> '
+    )
+    write(puzzle, into='上記の文字を入力してください')
+    logger.info('文字列を入力しました')
+    save_screenshot(d, p)
+    click('続行')
+    sleep(2)
+
+    try:
+        d.click('ap_password')
+        d.send_keys('ap_password', p['password'])
+        logger.info('パスワードを入力しました')
+    except TimeoutException:
         solve_puzzle(d, p)
 
 
@@ -117,20 +122,23 @@ def login(d, p):
     """
     url = d.current_url
     logger.info(f'{d.title} {url}')
+    # Eメールまたは携帯電話番号
     d.send_keys('ap_email', p['email'])
     logger.info('メールアドレスを入力しました')
     save_screenshot(d, p)
     click('次に進む')
-    d.url_changes(url)
-
-    d.send_keys('ap_password', p['password'])
-    logger.info('パスワードを入力しました')
+    sleep(2)
+    # パスワード
+    try:
+        d.send_keys('ap_password', p['password'])
+        logger.info('パスワードを入力しました')
+    except TimeoutException:
+        solve_puzzle(d, p)
+    # ログイン
     save_screenshot(d, p)
     d.click('signInSubmit')
-    reinput_password(d, p, url)
-    solve_puzzle(d, p)
-    confirmation_code(d, p)
-    account_fixup(d, p)
+    # confirmation_code(d, p)
+    # account_fixup(d, p)
 
 
 def open_order_history(d, p):
@@ -165,17 +173,23 @@ def get_order_data(p, d, i):
     r = {}
     if p['licensed'] and p.get('target_year'):
         # 年 表示
-        order_card = f"/html/body/div[1]/div[1]/div[1]/div[5]/div[{i}]/"
+        order_card = f"/html/body/div[1]/div[1]/div[1]/div[5]/div[{i}]/div[1]/div/div/div/"
+        r["注文日"] = d.find_element_by_xpath(
+            f'{order_card}div[1]/div/div[1]/div[2]/span'
+        ).text
+        r["注文番号"] = d.find_element_by_xpath(
+            f'{order_card}div[2]/div[1]/span[2]/bdi'
+        ).text
     else:
         # 過去3か月 表示
-        order_card = f"/html/body/div[1]/section/div[1]/div[{i + 7}]/div/"
+        order_card = f"/html/body/div[1]/section/div[1]/div[{i + 7}]/div/div[1]/div/div/div/h5/"
+        r["注文日"] = d.find_element_by_xpath(
+            f'{order_card}div[1]/div/div[1]/div[2]/span'
+        ).text
+        r["注文番号"] = d.find_element_by_xpath(
+            f'{order_card}div[2]/div[1]/div/span[2]'
+        ).text
 
-    r["注文日"] = d.find_element_by_xpath(
-        f'{order_card}div[1]/div/div/div/div[1]/div/div[1]/div[2]/span'
-    ).text
-    r["注文番号"] = d.find_element_by_xpath(
-        f'{order_card}div[1]/div/div/div/div[2]/div[1]/span[2]/bdi'
-    ).text
     r["領収書"] = (
         f'https://www.amazon.co.jp/gp/digital/your-account/order-summary.html/'
         f'ref=oh_aui_ajax_dpi?ie=UTF8&orderID={r["注文番号"]}&print=1'
