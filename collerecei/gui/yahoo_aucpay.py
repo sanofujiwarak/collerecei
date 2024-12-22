@@ -2,7 +2,7 @@
 # Copyright (c) sanofujiwarak.
 from datetime import datetime
 from logging import getLogger
-import sys
+from sys import exit
 
 import PySimpleGUI as sg
 
@@ -56,6 +56,7 @@ def read_params_with_gui(
         icon=icon,
         text_justification='r'
     )
+    # TODO: 更新があれば通知したい
 
     event, values = w.read()
     w.close()
@@ -78,4 +79,4 @@ def read_params_with_gui(
         return p
     else:
         logger.info('終了します。')
-        sys.exit(0)
+        exit(0)

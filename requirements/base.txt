@@ -1,2 +1,2 @@
-PySimpleGUI==4.43.0
-pselenium
+PySimpleGUI==4.70.1
+pselenium==2024.12.19

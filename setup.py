@@ -17,6 +17,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     packages=find_packages(),
-    python_requires='==3.9.*',
+    python_requires='>=3.9',
     install_requires=open(f'requirements{os.sep}base.txt').read().splitlines(),
 )

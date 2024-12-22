@@ -9,8 +9,9 @@
 - Intel Pentium 4 以降のプロセッサ（SSE3 対応）
 
 ## 機能
-- Amazon.co.jpの領収書の取得
-- Yahoo!かんたん決済の支払い明細の取得
+- Amazon.co.jpの 領収書 取得
+- Amazon.co.jpの 適格請求書 / 支払い明細書 / 返金明細書 取得
+- Yahoo!かんたん決済の 支払い明細 取得
 
 ## 使い方
 1. [Releases](https://github.com/sanofujiwarak/collerecei/releases/latest) より、実行ファイルを取得する

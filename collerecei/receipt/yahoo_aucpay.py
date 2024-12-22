@@ -2,9 +2,10 @@
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
 
-from helium import *
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from helium import click, go_to, select, write
+from selenium.common.exceptions import NoSuchElementException
 
+from pselenium import By, TimeoutException, set_driver
 from ..services.utils import save_screenshot
 
 logger = getLogger(__name__)
@@ -160,7 +161,7 @@ def collect_detail_url(d, p, l):
     logger.info(f'{d.title} {url}')
     for i in range(2, 12):
         try:
-            elm = d.find_element_by_xpath(f'/html/body/div[2]/div/div/div[2]/div/div[1]/table/tbody/tr[{i}]/td[4]/a')
+            elm = d.find_element(By.XPATH, f'/html/body/div[2]/div/div/div[2]/div/div[1]/table/tbody/tr[{i}]/td[4]/a')
             url = elm.get_property('href')
             logger.debug(f'取得対象URL={url}')
             l.append(url)
@@ -183,7 +184,7 @@ def get_pdf(d, p, l):
         d.get(i)
         url = d.current_url
         logger.info(f'{d.title} {url}')
-        d.save_pdf(f"Yahoo!かんたん決済_支払明細_{d.find_element_by_xpath('/html/body/div[2]/div/div/div[2]/div[3]/ul/li[3]/dl/dd').text}.pdf")
+        d.save_pdf(f"Yahoo!かんたん決済_支払明細_{d.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div[3]/ul/li[3]/dl/dd').text}.pdf")
 
 
 def main(d, p):
@@ -217,7 +218,7 @@ def main(d, p):
     logger.info('明細ページを保存します')
     get_pdf(d, p, l)
 
-    # FIXME: 受け取り一覧が必要な人は少ないと思われる
+    # TODO: 受け取り一覧が必要な人は少ないと思われる
     # 受け取り一覧
     # go_to('https://aucpay.yahoo.co.jp/detail-front/ReceiveDetailList')
     # https://aucpay.yahoo.co.jp/detail-front/ReceiveDetailList?_indication=202010&_menu=3
