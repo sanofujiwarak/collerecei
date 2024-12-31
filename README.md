@@ -11,6 +11,9 @@
 ## 機能
 - Amazon.co.jpの 領収書 取得
 - Amazon.co.jpの 適格請求書 / 支払い明細書 / 返金明細書 取得
+- Amazon.co.jpの適格請求書を発行者ごとにファイルを分割
+- Amazon.co.jpの適格請求書ファイルを電子帳簿保存法の検索要件を満たす簡易な方法に対応可能な規則的なファイル名に変更  
+https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/tokusetsu/pdf/0023006-085_01.pdf
 - Yahoo!かんたん決済の 支払い明細 取得
 
 ## 使い方

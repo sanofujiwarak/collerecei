@@ -1,7 +1,7 @@
 # encoding: UTF-8
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
-from os import rename, sep
+from os import rename, path, sep
 from time import sleep
 import re
 
@@ -192,6 +192,12 @@ def open_order_history(d, p):
             f'&__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A'
             f'&orderFilter=year-{p["target_year"]}'
         )
+    else:
+        # 過去3か月 表示
+        go_to(
+            'https://www.amazon.co.jp/gp/legacy/order-history'
+            '?opt=ab&unifiedOrders=1&digitalOrders=1&returnTo=&_encoding=UTF8'
+        )
 
 
 def get_invoice_link(d, p, create_link: str, links: str):
@@ -223,39 +229,15 @@ def get_order_data(p, d, i):
     :return: dict
     """
     r = {}
-    if p['licensed'] and p.get('target_year'):
-        # 対象年の指定有り
-        order_card = f"/html/body/div[1]/div[1]/div[1]/div[5]/div[{i}]/div[1]/div/div/div/"
-        r["注文日"] = d.find_element(
-            By.XPATH,
-            f'{order_card}div[1]/div/div[1]/div[2]/span'
-        ).text
-        r["注文番号"] = d.find_element(
-            By.XPATH,
-            f'{order_card}div[2]/div[1]/span[2]/bdi'
-        ).text
-        r["invoice"] = get_invoice_link(
-            d, p,
-            f'{order_card}div[2]/div[2]/ul/span[1]/span/a',
-            f'/html/body/div[{i + 1}]/div/div[1]/div/ul'
-        )
-    else:
-        # 過去3か月 表示
-        order_card = f"/html/body/div[1]/section/div[1]/div[{i + 7}]/div/div[1]/div/div/div/h5/"
-        r["注文日"] = d.find_element(
-            By.XPATH,
-            f'{order_card}div[1]/div/div[1]/div[2]/span'
-        ).text
-        r["注文番号"] = d.find_element(
-            By.XPATH,
-            f'{order_card}div[2]/div[1]/div/span[2]'
-        ).text
-        r["invoice"] = get_invoice_link(
-            d, p,
-            f'{order_card}div[2]/div[2]/div/span/a',
-            f'/html/body/div[{i + 3}]/div/div[1]/div/ul'
-        )
-
+    order_card = f"/html/body/div[1]/div[1]/div[1]/div[5]/div[{i}]/div[1]/div/div/div/"
+    r["注文日"] = d.find_element(
+        By.XPATH,
+        f'{order_card}div[1]/div/div[1]/div[2]/span'
+    ).text
+    r["注文番号"] = d.find_element(
+        By.XPATH,
+        f'{order_card}div[2]/div[1]/span[2]/bdi'
+    ).text
     r["領収書"] = (
         f'https://www.amazon.co.jp/gp/digital/your-account/order-summary.html/'
         f'ref=oh_aui_ajax_dpi?ie=UTF8&orderID={r["注文番号"]}&print=1'
@@ -263,6 +245,20 @@ def get_order_data(p, d, i):
         f'https://www.amazon.co.jp/gp/css/summary/print.html/'
         f'ref=oh_aui_ajax_invoice?ie=UTF8&orderID={r["注文番号"]}'
     )
+    if p['licensed'] and p.get('target_year'):
+        # 対象年の指定有り
+        r["invoice"] = get_invoice_link(
+            d, p,
+            f'{order_card}div[2]/div[2]/ul/span[1]/span/a',
+            f'/html/body/div[{i + 1}]/div/div[1]/div/ul'
+        )
+    else:
+        # 過去3か月 表示
+        r["invoice"] = get_invoice_link(
+            d, p,
+            f'{order_card}div[2]/div[2]/ul/span[1]/span/a',
+            f'/html/body/div[{i + 2}]/div/div[1]/div/ul'
+        )
     logger.debug(r)
     return r
 
@@ -332,11 +328,14 @@ def get_receipt_pdf(d, rl):
     """
     for i in rl:
         # 適格請求書/支払い明細書/返金明細書を取得
+        ifile = f'{d.screenshot_dir}{sep}invoice.pdf'
         for j in range(len(i['invoice'])):
             d.get(i['invoice'][j])
-            sleep(1) # TODO: ダウンロード完了まで待つべき
+            while not path.exists(ifile):
+                # ダウンロード完了まで待つ
+                sleep(1)
             rename(
-                f'{d.screenshot_dir}{sep}invoice.pdf',
+                ifile,
                 f"{d.screenshot_dir}{sep}invoice_Amazon.co.jp_{i['注文番号']}_{j + 1}.pdf"
             )
         sleep(1)
