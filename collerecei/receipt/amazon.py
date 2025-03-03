@@ -299,7 +299,9 @@ def collect_receipt_url(d, p, rl):
         try:
             r = get_order_data(p, d, i)
             if validate_order(p, r):
-                logger.debug(f'取得対象のURL={r["領収書"]}')
+                logger.info(
+                    f'データ取得対象の注文です {r["注文日"]}, {r["注文番号"]}, {r["領収書"]}'
+                )
                 rl.append(r)
         except NoSuchElementException as e:
             # ページ途中で注文が無くなった場合
@@ -330,6 +332,7 @@ def get_receipt_pdf(d, rl):
         # 適格請求書/支払い明細書/返金明細書を取得
         ifile = f'{d.screenshot_dir}{sep}invoice.pdf'
         for j in range(len(i['invoice'])):
+            logger.debug(i['invoice'][j])
             d.get(i['invoice'][j])
             while not path.exists(ifile):
                 # ダウンロード完了まで待つ

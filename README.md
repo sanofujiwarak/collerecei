@@ -5,12 +5,15 @@
 ## 動作環境
 ご利用には、ご使用するパソコンがシステムの最小要件を満たしている必要があります。
 ### Windows
-- Windows 7、Windows 8、Windows 8.1、Windows 10 以降
+- 64-bit Windows 10 / Windows 11
 - Intel Pentium 4 以降のプロセッサ（SSE3 対応）
+### macOS
+- macOS 10.14 (Mojave) or later
+- Apple Silicon プロセッサ
 
 ## 機能
-- Amazon.co.jpの 領収書 取得
-- Amazon.co.jpの 適格請求書 / 支払い明細書 / 返金明細書 取得
+- Amazon.co.jpの領収書を取得
+- Amazon.co.jpの 適格請求書 / 支払い明細書 / 返金明細書 を取得
 - Amazon.co.jpの適格請求書を発行者ごとにファイルを分割
 - Amazon.co.jpの適格請求書ファイルを電子帳簿保存法の検索要件を満たす簡易な方法に対応可能な規則的なファイル名に変更  
 https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/tokusetsu/pdf/0023006-085_01.pdf

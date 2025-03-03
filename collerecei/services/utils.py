@@ -2,6 +2,7 @@
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
 from os import environ, sep
+from platform import system
 
 from helium import kill_browser
 
@@ -21,6 +22,22 @@ def save_screenshot(d, p):
         return d.save_screenshot(f'{p["ss_prefix"]}{next(p["iter"])}.png')
 
 
+def __set_binary_location() -> str:
+    pf = system()
+    if pf == 'Windows':
+        return fr'tools{sep}chrome-headless-shell-win64{sep}chrome-headless-shell.exe'
+    elif pf == 'Darwin':
+        return fr'tools{sep}chrome-headless-shell-mac-arm64{sep}chrome-headless-shell'
+
+
+def __set_driver_location() -> str:
+    pf = system()
+    if pf == 'Windows':
+        return fr'tools{sep}chromedriver.exe'
+    elif pf == 'Darwin':
+        return fr'tools{sep}chromedriver'
+
+
 def __get_webdriver(download_dir) -> ChromePlus:
     """
     :param str download_dir: スクリーンショット・pdf の保存先ディレクトリパス
@@ -31,7 +48,7 @@ def __get_webdriver(download_dir) -> ChromePlus:
     environ.setdefault('APP_SCREENSHOT_DIR', download_dir)
 
     o = ChromeOptions()
-    o.binary_location = fr'tools{sep}chrome-headless-shell-win64{sep}chrome-headless-shell.exe'
+    o.binary_location = __set_binary_location()
     o.headless = True
     o.add_argument('start-maximized')
     o.add_argument('enable-automation')
@@ -54,7 +71,7 @@ def __get_webdriver(download_dir) -> ChromePlus:
             "safebrowsing.enabled": True
         }
     )
-    return ChromePlus(service=Service(fr'tools{sep}chromedriver.exe'), options=o)
+    return ChromePlus(service=Service(__set_driver_location()), options=o)
 
 
 def exec_selenium(manipulate, module_name, params):
