@@ -12,21 +12,35 @@
 - Apple Silicon プロセッサ
 
 ## 機能
-- Amazon.co.jpの領収書を取得
-- Amazon.co.jpの 適格請求書 / 支払い明細書 / 返金明細書 を取得
-- Amazon.co.jpの適格請求書を発行者ごとにファイルを分割
-- Amazon.co.jpの適格請求書ファイルを電子帳簿保存法の検索要件を満たす簡易な方法に対応可能な規則的なファイル名に変更  
-https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/tokusetsu/pdf/0023006-085_01.pdf
-- Yahoo!かんたん決済の 支払い明細 取得
+### Amazon.co.jp
+- 領収書を取得
+- 適格請求書 / 支払い明細書 / 返金明細書 を取得
+- 適格請求書の発行者ごとにファイルを分割
+- 適格請求書のファイル名を変更([電子帳簿保存法の検索要件を満たすための簡易な方法に対応](https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/tokusetsu/pdf/0023006-085_01.pdf))
+### 楽天市場 (beta版)
+- 領収書を取得
+- 領収書のファイル名を変更([電子帳簿保存法の検索要件を満たすための簡易な方法に対応](https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/tokusetsu/pdf/0023006-085_01.pdf))
+### Yahoo!かんたん決済
+- 支払い明細を取得
 
 ## 使い方
 1. [Releases](https://github.com/sanofujiwarak/collerecei/releases/latest) より、実行ファイルを取得する
 2. 取得したファイルを展開する
 3. 自動取得処理を実行する
+### Windows
 - Amazon.co.jp の場合  
 `amazon.exe`を実行する
+- 楽天市場 の場合  
+`rakuten.exe`を実行する
 - Yahoo!かんたん決済 の場合  
 `yahoo_aucpay.exe`を実行する
+### macOS
+- Amazon.co.jp の場合  
+`amazon`を実行する
+- 楽天市場 の場合  
+`rakuten`を実行する
+- Yahoo!かんたん決済 の場合  
+`yahoo_aucpay`を実行する
 
 ## ソースコードの公開範囲について
 以下の機能については、ソースコードを公開していません。
@@ -39,8 +53,7 @@ https://www.nta.go.jp/law/joho-zeikaishaku/sonota/jirei/tokusetsu/pdf/0023006-08
 
 ## 実行ファイルに同梱しているソフトウェア
 「これれし」から、各種ECサイトへのアクセス、及び、操作を行うために以下のソフトウェアを同梱しています。
-- Google Chrome Portable : [https://portableapps.com/apps/internet/google_chrome_portable](https://portableapps.com/apps/internet/google_chrome_portable)
-- ChromeDriver : [https://chromedriver.chromium.org](https://chromedriver.chromium.org)
+- Chrome for Testing : [https://developer.chrome.com/blog/chrome-for-testing](https://developer.chrome.com/blog/chrome-for-testing)
 
 ## 公式サイト
 [https://collerecei.tssol.net/](https://collerecei.tssol.net/)

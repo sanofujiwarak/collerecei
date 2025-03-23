@@ -1,5 +1,6 @@
 # encoding: UTF-8
 # Copyright (c) sanofujiwarak.
+from datetime import datetime
 from logging import getLogger
 from os import rename, path, sep
 from time import sleep
@@ -184,20 +185,15 @@ def open_order_history(d, p):
     logger.info(f'{d.title} {url}')
     d.title_is('注文履歴')
     save_screenshot(d, p)
-    if p['licensed'] and p.get('target_year'):
-        # 対象年の指定有り
-        go_to(
-            f'https://www.amazon.co.jp/gp/your-account/order-history'
-            f'?opt=ab&digitalOrders=1&unifiedOrders=1&returnTo='
-            f'&__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A'
-            f'&orderFilter=year-{p["target_year"]}'
-        )
+    now = datetime.now()
+    order_history = 'https://www.amazon.co.jp/gp/your-account/order-history?opt=ab&digitalOrders=1&unifiedOrders=1&returnTo=&__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A'
+    if p['licensed'] and p["target_year"]:
+        # 対象年指定あり
+        pass
     else:
-        # 過去3か月 表示
-        go_to(
-            'https://www.amazon.co.jp/gp/legacy/order-history'
-            '?opt=ab&unifiedOrders=1&digitalOrders=1&returnTo=&_encoding=UTF8'
-        )
+        p["target_year"] = now.year
+        p["target_month"] = now.month
+    go_to(f'{order_history}&orderFilter=year-{p["target_year"]}')
 
 
 def get_invoice_link(d, p, create_link: str, links: str):
@@ -245,20 +241,11 @@ def get_order_data(p, d, i):
         f'https://www.amazon.co.jp/gp/css/summary/print.html/'
         f'ref=oh_aui_ajax_invoice?ie=UTF8&orderID={r["注文番号"]}'
     )
-    if p['licensed'] and p.get('target_year'):
-        # 対象年の指定有り
-        r["invoice"] = get_invoice_link(
-            d, p,
-            f'{order_card}div[2]/div[2]/ul/span[1]/span/a',
-            f'/html/body/div[{i + 1}]/div/div[1]/div/ul'
-        )
-    else:
-        # 過去3か月 表示
-        r["invoice"] = get_invoice_link(
-            d, p,
-            f'{order_card}div[2]/div[2]/ul/span[1]/span/a',
-            f'/html/body/div[{i + 2}]/div/div[1]/div/ul'
-        )
+    r["invoice"] = get_invoice_link(
+        d, p,
+        f'{order_card}div[2]/div[2]/ul/span[1]/span/a',
+        f'/html/body/div[{i + 1}]/div/div[1]/div/ul'
+    )
     logger.debug(r)
     return r
 
@@ -270,16 +257,13 @@ def validate_order(p, r):
     :param dict r: order data
     :return: bool
     """
-    if p.get('target_year') is None or p.get('target_month') is None \
-            or p['target_year'] == '':
-        # 対象年 または 対象月が未指定
+    if p['target_month'] == '':
+        # 対象月が未指定
         return True
 
-    # 注文日の年月が対象月年月と同じかチェック
+    # 注文日の年月が対象年月と同じかチェック
     s = re.search(r'(20[0-9]{2})年([1]?[0-9])月', r['注文日'])
-    if s and p['target_year'] == s.group(1) and (
-            p['target_month'] == '' or p['target_month'] == s.group(2)
-    ):
+    if s and p['target_year'] == s.group(1) and p['target_month'] == s.group(2):
         return True
     logger.info(f'データ取得対象外の注文です {r["注文日"]}, {r["注文番号"]}')
     return False
@@ -305,7 +289,7 @@ def collect_receipt_url(d, p, rl):
                 rl.append(r)
         except NoSuchElementException as e:
             # ページ途中で注文が無くなった場合
-            logger.debug(e)
+            logger.debug(str(e).splitlines()[0])
 
     if p['licensed']:
         try:

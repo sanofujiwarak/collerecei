@@ -2,8 +2,8 @@
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
 
-from ..gui.yahoo_aucpay import read_params_with_gui
-from ..receipt.yahoo_aucpay import main
+from ..gui.rakuten import read_params_with_gui
+from ..receipt.rakuten import main
 from .utils import exec_selenium
 
 logger = getLogger(__name__)
