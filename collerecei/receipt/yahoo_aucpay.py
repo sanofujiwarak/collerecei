@@ -11,11 +11,30 @@ from ..services.utils import save_screenshot
 logger = getLogger(__name__)
 
 
+def validate_moji(d, p):
+    """文字認証を行います"""
+    url = d.current_url
+    logger.info(f'{d.title} {url}')
+    if "文字認証を行います" in d.title:
+        n = next(p["iter"])
+        d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
+        code = input('少し見えにくい文字を入力してください -> ')
+        logger.debug(code)
+        write(code, into='表示されている文字を入力してください。')
+        logger.info('文字を入力しました')
+        save_screenshot(d, p)
+        click('続ける')
+        try:
+            d.url_changes(url)
+        except TimeoutException:
+            validate_moji(d, p)
+
+
 def input_password(d, p):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
-    '''
+    """
     try:
         d.clickable('passwd')
 
@@ -33,10 +52,10 @@ def input_password(d, p):
 
 
 def login(d, p):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
-    '''
+    """
     url = d.current_url
     logger.info(f'{d.title} {url}')
     d.send_keys('login_handle', p['email'])
@@ -57,10 +76,10 @@ def login(d, p):
 
 
 def confirmation_email(d, p):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
-    '''
+    """
     try:
         d.title_is('メールアドレスを最新に！ - Yahoo! JAPAN')
     except TimeoutException:
@@ -73,10 +92,10 @@ def confirmation_email(d, p):
 
 
 def yahoo_card(d, p):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
-    '''
+    """
     try:
         d.title_is('Yahoo! JAPANカード（年会費永年無料） - Yahoo! JAPAN')
     except TimeoutException:
@@ -89,10 +108,10 @@ def yahoo_card(d, p):
 
 
 def lyp_premium(d, p):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
-    '''
+    """
     try:
         d.title_is('LYPプレミアム - LINE・ヤフー・PayPayがもっと楽しく、もっとおトクに')
     except TimeoutException:
@@ -105,11 +124,11 @@ def lyp_premium(d, p):
 
 
 def payment_detail_list(d, p, l):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :param list l: 明細URLの格納先
-    '''
+    """
     d.title_is('支払い一覧 - Yahoo!かんたん決済')
 
     url = d.current_url
@@ -151,12 +170,12 @@ def payment_detail_list(d, p, l):
 
 
 def collect_detail_url(d, p, l):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p: 設定
     :param list l: 明細URLの格納先
     :return:
-    '''
+    """
     url = d.current_url
     logger.info(f'{d.title} {url}')
     for i in range(2, 12):
@@ -173,13 +192,13 @@ def collect_detail_url(d, p, l):
 
 
 def get_pdf(d, p, l):
-    '''
+    """
     対象ページをpdf化
     :param pselenium.ChromePlus d:
     :param dict p:
     :param list l:
     :return:
-    '''
+    """
     for i in l:
         d.get(i)
         url = d.current_url
@@ -188,16 +207,17 @@ def get_pdf(d, p, l):
 
 
 def main(d, p):
-    '''
+    """
     :param pselenium.ChromePlus d:
     :param dict p:
     :return:
-    '''
+    """
     set_driver(d)
     d.set_window_size(1080, 1080)
 
     # 支払い一覧
     go_to('https://aucpay.yahoo.co.jp/detail-front/PaymentDetailList')
+    validate_moji(d, p)
     login(d, p)
 
     # TODO: 未確認
