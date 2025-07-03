@@ -58,7 +58,7 @@ def login(d, p):
     """
     url = d.current_url
     logger.info(f'{d.title} {url}')
-    d.send_keys('login_handle', p['email'])
+    d.find_element(By.TAG_NAME, 'input').send_keys(p['email'])
     logger.info('ID/携帯電話番号/メールアドレス を入力しました')
     save_screenshot(d, p)
     click('次へ')

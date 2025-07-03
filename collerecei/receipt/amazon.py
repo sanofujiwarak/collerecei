@@ -55,16 +55,34 @@ def solve_puzzle(d, p, field: str = '上記の文字を入力してください'
     :return:
     """
     n = next(p["iter"])
-    d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
-    puzzle = input(
-        f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
-        f'を確認し、文字と数字を入力してください -> '
-    )
-    write(puzzle, into=field)
-    logger.info('文字列を入力しました')
-    save_screenshot(d, p)
-    click('続行')
-    sleep(2)
+    try:
+        d.clickable('amzn-btn-verify-internal')
+        d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
+        puzzle = input(
+            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
+            f'を確認し、選択すべき画像を番号で指定してください(数字のみ入力)\n1 2 3\n4 5 6\n7 8 9\n -> '
+        )
+        for i in puzzle:
+            logger.debug(i)
+            d.execute_script(
+                "arguments[0].click();",
+                d.find_element(By.XPATH, f'/html/body/div[1]/div[2]/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/form/div[2]/div/div[2]/canvas/button[{i}]')
+            )
+            sleep(0.5)
+        logger.info('画像を選択しました')
+        save_screenshot(d, p)
+        d.click('amzn-btn-verify-internal')
+    except TimeoutException:
+        puzzle = input(
+            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
+            f'を確認し、文字と数字を入力してください -> '
+        )
+        write(puzzle, into=field)
+        logger.info('文字列を入力しました')
+        save_screenshot(d, p)
+        click('続行')
+    finally:
+        sleep(2)
 
 
 def input_password(d, p) -> None:
@@ -93,6 +111,8 @@ def check_id(d, p):
     url = d.current_url
     logger.info(f'{d.title} {url}')
     if 'IDを確認してください' in d.title:
+        d.set_window_size(800, 1200)
+        sleep(3)
         solve_puzzle(d, p, '上の文字と数字を入力してください')
         check_id(d, p)
 
@@ -184,6 +204,7 @@ def open_order_history(d, p):
     url = d.current_url
     logger.info(f'{d.title} {url}')
     d.title_is('注文履歴')
+    d.set_window_size(1080, 1200)
     save_screenshot(d, p)
     now = datetime.now()
     order_history = 'https://www.amazon.co.jp/gp/your-account/order-history?opt=ab&digitalOrders=1&unifiedOrders=1&returnTo=&__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A'
