@@ -19,7 +19,7 @@ def save_screenshot(d, p):
     :param dict p: 設定
     """
     if DEBUG:
-        return d.save_screenshot(f'{p["ss_prefix"]}{next(p["iter"])}.png')
+        d.save_screenshot(f'{p["ss_prefix"]}{next(p["iter"])}.png')
 
 
 def __set_binary_location() -> str:
@@ -28,6 +28,7 @@ def __set_binary_location() -> str:
         return fr'tools{sep}chrome-headless-shell-win64{sep}chrome-headless-shell.exe'
     elif pf == 'Darwin':
         return fr'tools{sep}chrome-headless-shell-mac-arm64{sep}chrome-headless-shell'
+    raise RuntimeError('Unsupported platform!')
 
 
 def __set_driver_location() -> str:
@@ -36,6 +37,7 @@ def __set_driver_location() -> str:
         return fr'tools{sep}chromedriver.exe'
     elif pf == 'Darwin':
         return fr'tools{sep}chromedriver'
+    raise RuntimeError('Unsupported platform!')
 
 
 def __get_webdriver(download_dir) -> ChromePlus:
