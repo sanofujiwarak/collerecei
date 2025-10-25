@@ -2,7 +2,8 @@
 # Copyright (c) sanofujiwarak.
 from datetime import datetime
 from logging import getLogger
-from os import path, sep
+from os import sep
+from pathlib import Path
 from time import sleep
 
 from helium import click, go_to
@@ -123,9 +124,13 @@ def get_receipt_pdf(d, p, ol):
                 save_screenshot(d, p)
                 click('OK')
             # ダウンロード完了まで待つ
-            pdf = f'{d.screenshot_dir}{sep}order_receipt_{i["注文番号"]}.pdf'
-            while not path.exists(pdf):
+            p = Path(f'{d.screenshot_dir}{sep}')
+            for num in range(0, 120):
+                if any(p.glob(f'*{i["注文番号"]}.pdf')):
+                    break
                 sleep(1)
+            if num == 119:
+                logger.info(f'領収書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i}')
         else:
             logger.info(f'領収書が発行出来ません: {i}')
 
