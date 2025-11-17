@@ -6,7 +6,7 @@ from os import rename, path, sep
 from time import sleep
 import re
 
-from helium import click, go_to, write
+from helium import click, go_to, write, S
 from selenium.common.exceptions import NoSuchElementException
 
 from pselenium import By, TimeoutException, set_driver
@@ -214,27 +214,7 @@ def open_order_history(d, p):
     else:
         p["target_year"] = now.year
         p["target_month"] = now.month
-    go_to(f'{order_history}&orderFilter=year-{p["target_year"]}')
-
-
-def get_invoice_link(d, p, create_link: str, links: str):
-    """適格請求書/支払い明細書/返金明細書 のリンクを取得"""
-    d.click(create_link, By.XPATH)
-    try:
-        d.clickable(links, By.XPATH)
-    except TimeoutException:
-        d.click(create_link, By.XPATH)
-        d.clickable(links, By.XPATH)
-    save_screenshot(d, p)
-    invoice_links = []
-    try:
-        for i in d.find_element(By.XPATH, links).find_elements(By.TAG_NAME, 'a'):
-            href = i.get_property('href')
-            if 'invoice.pdf' in href:
-                invoice_links.append(href)
-    except NoSuchElementException:
-        pass
-    return invoice_links
+    go_to(f'{order_history}&timeFilter=year-{p["target_year"]}')
 
 
 def get_order_data(p, d, i):
@@ -246,14 +226,14 @@ def get_order_data(p, d, i):
     :return: dict
     """
     r = {}
-    order_card = f"/html/body/div[1]/div[1]/div[1]/div[5]/div[{i}]/div[1]/div/div/div/"
+    order_card = f"/html/body/div[1]/section/div/div[{i}]/div/div[1]/div/div/div/h5/ul/"
     r["注文日"] = d.find_element(
         By.XPATH,
-        f'{order_card}div[1]/div/div[1]/div[2]/span'
+        f'{order_card}div[1]/div/div[1]/li/div[2]/span'
     ).text
     r["注文番号"] = d.find_element(
         By.XPATH,
-        f'{order_card}div[2]/div[1]/span[2]/bdi'
+        f'{order_card}div[2]/div[1]/li/div/span[2]'
     ).text
     r["領収書"] = (
         f'https://www.amazon.co.jp/gp/digital/your-account/order-summary.html/'
@@ -262,11 +242,10 @@ def get_order_data(p, d, i):
         f'https://www.amazon.co.jp/gp/css/summary/print.html/'
         f'ref=oh_aui_ajax_invoice?ie=UTF8&orderID={r["注文番号"]}'
     )
-    r["invoice"] = get_invoice_link(
-        d, p,
-        f'{order_card}div[2]/div[2]/ul/span[1]/span/a',
-        f'/html/body/div[{i + 1}]/div/div[1]/div/ul'
-    )
+    r["注文内容"] = d.find_element(
+        By.XPATH,
+        f'{order_card}div[2]/div[2]/li/a'
+    ).get_property('href')
     logger.debug(r)
     return r
 
@@ -300,12 +279,12 @@ def collect_receipt_url(d, p, rl):
     """
     url = d.current_url
     logger.info(f'{d.title} {url}')
-    for i in range(2, 12):
+    for i in range(9, 19):
         try:
             r = get_order_data(p, d, i)
             if validate_order(p, r):
                 logger.info(
-                    f'データ取得対象の注文です {r["注文日"]}, {r["注文番号"]}, {r["領収書"]}'
+                    f'データ取得対象の注文です {r["注文日"]}, {r["注文番号"]}, {r["領収書"]}, {r["注文内容"]}'
                 )
                 rl.append(r)
         except NoSuchElementException as e:
@@ -326,7 +305,28 @@ def collect_receipt_url(d, p, rl):
         collect_receipt_url(d, p, rl)
 
 
-def get_receipt_pdf(d, rl):
+def get_invoice_links(d, p):
+    """適格請求書/支払い明細書/返金明細書 のリンクを取得"""
+    click('領収書等')
+    # idが不定なため正確なidを得る
+    popover_id = S("[id^='a-popover-']").web_element.get_attribute("id")
+    # リンクが作成されるのを待つ
+    for cnt in range(0, 30):
+        anchors = len(d.find_element(By.ID, popover_id).find_elements(By.TAG_NAME, 'a'))
+        if anchors > 0:
+            break
+        sleep(1)
+    invoice_links = []
+    for i in d.find_element(By.ID, popover_id).find_elements(By.TAG_NAME, 'a'):
+        href = i.get_property('href')
+        logger.debug(href)
+        if 'invoice.pdf' in href:
+            invoice_links.append(href)
+    save_screenshot(d, p)
+    return invoice_links
+
+
+def get_receipt_pdf(d, p, rl):
     """
     領収書ページをpdf化
     :param pselenium.ChromePlus d:
@@ -334,18 +334,28 @@ def get_receipt_pdf(d, rl):
     :return:
     """
     for i in rl:
+        # 注文内容を表示
+        d.get(i['注文内容'])
+        url = d.current_url
+        logger.info(f'{d.title} {url}')
+        # 適格請求書のリンクを取得
+        i['invoice'] = get_invoice_links(d, p)
         # 適格請求書/支払い明細書/返金明細書を取得
         ifile = f'{d.screenshot_dir}{sep}invoice.pdf'
         for j in range(len(i['invoice'])):
             logger.debug(i['invoice'][j])
             d.get(i['invoice'][j])
-            while not path.exists(ifile):
-                # ダウンロード完了まで待つ
+            # ダウンロード完了まで待つ
+            for num in range(0, 120):
+                if path.exists(ifile):
+                    rename(
+                        ifile,
+                        f"{d.screenshot_dir}{sep}invoice_Amazon.co.jp_{i['注文番号']}_{j + 1}.pdf"
+                    )
+                    break
                 sleep(1)
-            rename(
-                ifile,
-                f"{d.screenshot_dir}{sep}invoice_Amazon.co.jp_{i['注文番号']}_{j + 1}.pdf"
-            )
+            if num == 119:
+                logger.info(f'適格請求書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i['invoice'][j]}')
         sleep(1)
         # 領収書を取得
         d.get(i['領収書'])
@@ -373,4 +383,4 @@ def main(d, p):
 
     # 領収書ページをpdf化
     logger.info('領収書ページを保存します')
-    get_receipt_pdf(d, rl)
+    get_receipt_pdf(d, p, rl)

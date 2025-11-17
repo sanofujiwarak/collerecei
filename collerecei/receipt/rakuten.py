@@ -66,6 +66,7 @@ def get_order(d, p, i):
     r["注文日"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[1]/span[2]').text
     r["注文番号"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[2]/span[2]').text
     r["注文詳細"] = d.find_element(By.XPATH, f'{ol}div[2]/div/div[1]/a').get_attribute('href')
+    r["注文詳細"] = r["注文詳細"] if "order.my.rakuten" in r["注文詳細"] else d.find_element(By.XPATH, f'{ol}div[2]/div/div[2]/a').get_attribute('href')
     logger.info(r)
     return r
 
