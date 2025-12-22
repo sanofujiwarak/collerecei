@@ -9,7 +9,7 @@ import re
 from helium import click, go_to, write, S
 from selenium.common.exceptions import NoSuchElementException
 
-from pselenium import By, TimeoutException, set_driver
+from pselenium import By, TimeoutException, set_driver, ChromePlus
 from ..services.utils import save_screenshot
 
 logger = getLogger(__name__)
@@ -46,6 +46,15 @@ def reinput_password(d, p, url):
         reinput_password(d, p, url)
 
 
+def wait_for_document_complete(d: ChromePlus, timeout: int = 30):
+    """ページの読み込み完了を待つ"""
+    try:
+        d.document_complete(timeout)
+    except TimeoutException as e:
+        logger.warning('ページ読み込み中にタイムアウトが発生。ネットワーク速度が不足しています。')
+        raise e
+
+
 def solve_puzzle(d, p, field: str = '上記の文字を入力してください'):
     """
     アカウント保護のため、このパズルを解いてください
@@ -54,6 +63,7 @@ def solve_puzzle(d, p, field: str = '上記の文字を入力してください'
     :param str field: 入力欄指定
     :return:
     """
+    wait_for_document_complete(d)
     n = next(p["iter"])
     try:
         d.clickable('amzn-btn-verify-internal')
@@ -112,7 +122,6 @@ def check_id(d, p):
     logger.info(f'{d.title} {url}')
     if 'IDを確認してください' in d.title:
         d.set_window_size(800, 1200)
-        sleep(3)
         solve_puzzle(d, p, '上の文字と数字を入力してください')
         check_id(d, p)
 
@@ -279,6 +288,7 @@ def collect_receipt_url(d, p, rl):
     """
     url = d.current_url
     logger.info(f'{d.title} {url}')
+    wait_for_document_complete(d)
     for i in range(9, 19):
         try:
             r = get_order_data(p, d, i)
@@ -338,6 +348,8 @@ def get_receipt_pdf(d, p, rl):
         d.get(i['注文内容'])
         url = d.current_url
         logger.info(f'{d.title} {url}')
+        # ページの読み込み完了を待つ
+        wait_for_document_complete(d)
         # 適格請求書のリンクを取得
         i['invoice'] = get_invoice_links(d, p)
         # 適格請求書/支払い明細書/返金明細書を取得
@@ -355,7 +367,7 @@ def get_receipt_pdf(d, p, rl):
                     break
                 sleep(1)
             if num == 119:
-                logger.info(f'適格請求書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i['invoice'][j]}')
+                logger.info(f"適格請求書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i['invoice'][j]}")
         sleep(1)
         # 領収書を取得
         d.get(i['領収書'])

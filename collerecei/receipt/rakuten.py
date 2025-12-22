@@ -101,6 +101,13 @@ def get_receipt_pdf(d, p, ol):
         go_to(i["注文詳細"])
         url = d.current_url
         logger.info(f'{d.title} {url}')
+        # ページの読み込み完了を待つ
+        try:
+            d.document_complete(30)
+        except TimeoutException as e:
+            logger.warning('ページ読み込み中にタイムアウトが発生。ネットワーク速度が不足しています。')
+            raise e
+
         button = '/html/body/div/div/div[2]/div/div[1]/div/div[1]/div[5]/div/div[2]/div[2]/button'
         save_screenshot(d, p)
         if len(d.find_elements(By.XPATH, button)) > 0:
