@@ -5,8 +5,8 @@ from logging import getLogger
 from helium import click, go_to, select, write
 from selenium.common.exceptions import NoSuchElementException
 
-from pselenium import By, TimeoutException, set_driver
-from ..services.utils import save_screenshot
+from pselenium import sep, By, TimeoutException
+from ..services.utils import save_screenshot, wait_for_document_complete
 
 logger = getLogger(__name__)
 
@@ -16,9 +16,14 @@ def validate_moji(d, p):
     url = d.current_url
     logger.info(f'{d.title} {url}')
     if "文字認証を行います" in d.title:
+        wait_for_document_complete(d)
+        # TODO: 1回目は画像が表示されてない
         n = next(p["iter"])
         d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
-        code = input('少し見えにくい文字を入力してください -> ')
+        code = input(
+            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png を確認し、'
+            f'少し見えにくい文字を入力してください -> '
+        )
         logger.debug(code)
         write(code, into='表示されている文字を入力してください。')
         logger.info('文字を入力しました')
@@ -212,7 +217,6 @@ def main(d, p):
     :param dict p:
     :return:
     """
-    set_driver(d)
     d.set_window_size(1080, 1080)
 
     # 支払い一覧

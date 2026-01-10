@@ -2,15 +2,14 @@
 # Copyright (c) sanofujiwarak.
 from datetime import datetime
 from logging import getLogger
-from os import sep
 from pathlib import Path
 from time import sleep
 
 from helium import click, go_to
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 
-from pselenium import By, TimeoutException, set_driver
-from ..services.utils import save_screenshot
+from pselenium import sep, By, TimeoutException
+from ..services.utils import save_screenshot, wait_for_document_complete
 
 logger = getLogger(__name__)
 
@@ -20,12 +19,21 @@ def login(d, p):
     :param ChromePlus d:
     :param dict p: 設定
     """
+    # ユーザIDまたはメールアドレス
     url = d.current_url
     logger.info(f'{d.title} {url}')
     d.send_keys('user_id', p['email'])
     sleep(1)
     save_screenshot(d, p)
     click('次へ')
+    try:
+        d.url_changes(url)
+    except TimeoutException as e:
+        logger.info('ログイン失敗')
+        raise e
+    # パスワード
+    url = d.current_url
+    logger.info(f'{d.title} {url}')
     d.clickable('password_current')
     d.send_keys('password_current', p['password'])
     sleep(1)
@@ -102,12 +110,7 @@ def get_receipt_pdf(d, p, ol):
         url = d.current_url
         logger.info(f'{d.title} {url}')
         # ページの読み込み完了を待つ
-        try:
-            d.document_complete(30)
-        except TimeoutException as e:
-            logger.warning('ページ読み込み中にタイムアウトが発生。ネットワーク速度が不足しています。')
-            raise e
-
+        wait_for_document_complete(d)
         button = '/html/body/div/div/div[2]/div/div[1]/div/div[1]/div[5]/div/div[2]/div[2]/button'
         save_screenshot(d, p)
         if len(d.find_elements(By.XPATH, button)) > 0:
@@ -140,7 +143,7 @@ def get_receipt_pdf(d, p, ol):
             if num == 119:
                 logger.info(f'領収書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i}')
         else:
-            logger.info(f'領収書が発行出来ません: {i}')
+            logger.info(f'領収書発行ボタンが見つからないため、領収書が発行出来ません: {i}')
 
 
 def main(d, p):
@@ -149,8 +152,6 @@ def main(d, p):
     :param dict p:
     :return:
     """
-    set_driver(d)
-
     # ログイン
     go_to('https://login.account.rakuten.com/sso/authorize?client_id=rakuten_ichiba_top_web&service_id=s245&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Fwww.rakuten.co.jp%2F#/sign_in')
     login(d, p)

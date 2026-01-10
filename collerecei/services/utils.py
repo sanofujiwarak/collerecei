@@ -4,9 +4,9 @@ from logging import getLogger
 from os import environ, sep
 from platform import system
 
-from helium import kill_browser
+from helium import set_driver, kill_browser
 
-from pselenium import ChromeOptions, ChromePlus, Service, exec, get_download_dir
+from pselenium import TimeoutException, ChromeOptions, ChromePlus, Service, get_download_dir
 
 DEBUG = False
 
@@ -20,6 +20,30 @@ def save_screenshot(d, p):
     """
     if DEBUG:
         d.save_screenshot(f'{p["ss_prefix"]}{next(p["iter"])}.png')
+
+
+def wait_for_document_complete(d: ChromePlus, timeout: int = 30):
+    """ページの読み込み完了を待つ"""
+    try:
+        d.document_complete(timeout)
+    except TimeoutException as e:
+        logger.warning('ページ読み込み中にタイムアウトが発生。ネットワーク速度が不足しています。')
+        raise e
+
+
+def set_slow_network(d: ChromePlus):
+    # ネットワーク制限の設定
+    kbps = 200
+    d.execute_cdp_cmd('Network.emulateNetworkConditions', {
+        'offline': False,
+        'latency': 1600,  # 遅延 (ms)
+        'downloadThroughput': kbps * 1024 / 8, # kbpsをバイト換算
+        'uploadThroughput': kbps * 1024 / 8, # kbpsをバイト換算
+    })
+    # ネットワーク機能を有効化（これが必要な場合があります）
+    d.execute_cdp_cmd('Network.enable', {})
+    # キャッシュをクリア
+    d.execute_cdp_cmd('Network.clearBrowserCache', {})
 
 
 def __set_binary_location() -> str:
@@ -87,7 +111,10 @@ def exec_selenium(manipulate, module_name, params):
     DEBUG = environ.get('DEBUG', False)
     d = __get_webdriver(params['store_path'])
     try:
-        exec(d, manipulate,  params)
+        set_driver(d)
+        if DEBUG:
+            set_slow_network(d)
+        manipulate(d, params)
     except Exception as e:
         d.save_screenshot(f'{module_name}_error.png')
         if DEBUG:

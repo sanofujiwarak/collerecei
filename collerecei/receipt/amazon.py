@@ -9,8 +9,8 @@ import re
 from helium import click, go_to, write, S
 from selenium.common.exceptions import NoSuchElementException
 
-from pselenium import By, TimeoutException, set_driver, ChromePlus
-from ..services.utils import save_screenshot
+from pselenium import By, TimeoutException, ChromePlus
+from ..services.utils import save_screenshot, wait_for_document_complete
 
 logger = getLogger(__name__)
 
@@ -46,15 +46,6 @@ def reinput_password(d, p, url):
         reinput_password(d, p, url)
 
 
-def wait_for_document_complete(d: ChromePlus, timeout: int = 30):
-    """ページの読み込み完了を待つ"""
-    try:
-        d.document_complete(timeout)
-    except TimeoutException as e:
-        logger.warning('ページ読み込み中にタイムアウトが発生。ネットワーク速度が不足しています。')
-        raise e
-
-
 def solve_puzzle(d, p, field: str = '上記の文字を入力してください'):
     """
     アカウント保護のため、このパズルを解いてください
@@ -64,13 +55,13 @@ def solve_puzzle(d, p, field: str = '上記の文字を入力してください'
     :return:
     """
     wait_for_document_complete(d)
-    n = next(p["iter"])
     try:
         d.clickable('amzn-btn-verify-internal')
+        n = next(p["iter"])
         d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
         puzzle = input(
-            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
-            f'を確認し、選択すべき画像を番号で指定してください(数字のみ入力)\n1 2 3\n4 5 6\n7 8 9\n -> '
+            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png を確認し、'
+            f'選択すべき画像を番号で指定してください(数字のみ入力)\n1 2 3\n4 5 6\n7 8 9\n -> '
         )
         for i in puzzle:
             logger.debug(i)
@@ -83,6 +74,9 @@ def solve_puzzle(d, p, field: str = '上記の文字を入力してください'
         save_screenshot(d, p)
         d.click('amzn-btn-verify-internal')
     except TimeoutException:
+        # d.clickable timeout時(メールアドレス不正)もここで気付ける
+        n = next(p["iter"])
+        d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
         puzzle = input(
             f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
             f'を確認し、文字と数字を入力してください -> '
@@ -383,7 +377,6 @@ def main(d, p):
     :return:
     """
     # 注文履歴画面を開く
-    set_driver(d)
     go_to('https://www.amazon.co.jp/gp/css/order-history')
     login(d, p)
     open_order_history(d, p)
