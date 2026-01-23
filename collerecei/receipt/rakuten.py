@@ -124,7 +124,7 @@ def get_receipt_pdf(d, p, ol):
                     By.XPATH
                 )
             except ElementNotInteractableException as e:
-                logger.info(f'領収書再発行のため、宛名を設定出来ません: {i}')
+                logger.info(f'領収書再発行のため、宛名を設定出来ません。設定されている宛名で領収書をダウンロードします: {i}')
                 editable = False
             # 発行
             save_screenshot(d, p)
@@ -135,9 +135,9 @@ def get_receipt_pdf(d, p, ol):
                 save_screenshot(d, p)
                 click('OK')
             # ダウンロード完了まで待つ
-            p = Path(f'{d.screenshot_dir}{sep}')
+            download_dir = Path(f'{d.screenshot_dir}{sep}')
             for num in range(0, 120):
-                if any(p.glob(f'*{i["注文番号"]}.pdf')):
+                if any(download_dir.glob(f'*{i["注文番号"]}.pdf')):
                     break
                 sleep(1)
             if num == 119:
