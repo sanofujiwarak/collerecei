@@ -91,6 +91,7 @@ def __get_webdriver(download_dir) -> ChromePlus:
         'prefs',
         {
             'intl.accept_languages': 'ja,en-US;q=0.9,en;q=0.8',
+            'plugins.always_open_pdf_externally': True,
             "download.default_directory": get_download_dir(),
             "download.prompt_for_download": False,
             "download.directory_upgrade": True,

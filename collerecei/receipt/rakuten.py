@@ -87,7 +87,7 @@ def collect_order_data(d, p, ol):
     :param list ol:
     :return:
     """
-    for i in range(1, 26):
+    for i in range(1, 30+1):
         try:
             order = get_order(d, p, i)
             ol.append(order)
@@ -115,7 +115,7 @@ def get_receipt_pdf(d, p, ol):
         save_screenshot(d, p)
         if len(d.find_elements(By.XPATH, button)) > 0:
             d.clickable(button, By.XPATH)
-            # 宛名入力
+            # 「宛名」を入力
             editable = True
             try:
                 d.send_keys(
@@ -126,10 +126,10 @@ def get_receipt_pdf(d, p, ol):
             except ElementNotInteractableException as e:
                 logger.info(f'領収書再発行のため、宛名を設定出来ません。設定されている宛名で領収書をダウンロードします: {i}')
                 editable = False
-            # 発行
+            # 「発行する」ボタンを押す
             save_screenshot(d, p)
             d.click(button, By.XPATH)
-            # 宛名の確認
+            # 宛名の確認 ポップアップ
             if editable:
                 sleep(1)
                 save_screenshot(d, p)
@@ -142,8 +142,10 @@ def get_receipt_pdf(d, p, ol):
                 sleep(1)
             if num == 119:
                 logger.info(f'領収書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i}')
+                d.save_screenshot(f'{p["ss_prefix"]}timeout_{i["注文番号"]}.png')
         else:
             logger.info(f'領収書発行ボタンが見つからないため、領収書が発行出来ません: {i}')
+            d.save_screenshot(f'{p["ss_prefix"]}notfound_{i["注文番号"]}.png')
 
 
 def main(d, p):
@@ -167,7 +169,7 @@ def main(d, p):
     param = set_period(d, p)
 
     # 購入履歴一覧
-    d.set_window_size(900, 2880)
+    d.set_window_size(900, 1800*2)
     go_to(f'https://order.my.rakuten.co.jp/purchase-history/order-list{param}')
     url = d.current_url
     logger.info(f'{d.title} {url}')
@@ -180,5 +182,5 @@ def main(d, p):
 
     # 領収書をダウンロード
     logger.info('領収書を保存します')
-    d.set_window_size(900, 1440)
+    d.set_window_size(900, 1800)
     get_receipt_pdf(d, p, ol)
