@@ -2,7 +2,7 @@
 # Copyright (c) sanofujiwarak.
 from datetime import datetime
 from logging import getLogger
-from os import rename, path, sep
+from os import sep
 from time import sleep
 import re
 
@@ -10,7 +10,7 @@ from helium import click, go_to, write, S
 from selenium.common.exceptions import NoSuchElementException
 
 from pselenium import By, TimeoutException, ChromePlus
-from ..services.utils import save_screenshot, wait_for_document_complete
+from ..services.utils import save_screenshot, wait_for_document_complete, get_with_requests
 
 logger = getLogger(__name__)
 
@@ -347,21 +347,13 @@ def get_receipt_pdf(d, p, rl):
         # 適格請求書のリンクを取得
         i['invoice'] = get_invoice_links(d, p)
         # 適格請求書/支払い明細書/返金明細書を取得
-        ifile = f'{d.screenshot_dir}{sep}invoice.pdf'
         for j in range(len(i['invoice'])):
             logger.debug(i['invoice'][j])
-            d.get(i['invoice'][j])
-            # ダウンロード完了まで待つ
-            for num in range(0, 120):
-                if path.exists(ifile):
-                    rename(
-                        ifile,
-                        f"{d.screenshot_dir}{sep}invoice_Amazon.co.jp_{i['注文番号']}_{j + 1}.pdf"
-                    )
-                    break
-                sleep(1)
-            if num == 119:
-                logger.info(f"適格請求書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i['invoice'][j]}")
+            get_with_requests(
+                d,
+                i['invoice'][j],
+                f"{d.screenshot_dir}{sep}invoice_Amazon.co.jp_{i['注文番号']}_{j + 1}.pdf"
+            )
         sleep(1)
         # 領収書を取得
         d.get(i['領収書'])

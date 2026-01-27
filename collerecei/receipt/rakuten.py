@@ -2,14 +2,13 @@
 # Copyright (c) sanofujiwarak.
 from datetime import datetime
 from logging import getLogger
-from pathlib import Path
 from time import sleep
 
 from helium import click, go_to
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 
-from pselenium import sep, By, TimeoutException
-from ..services.utils import save_screenshot, wait_for_document_complete
+from pselenium import sep, By, TimeoutException, ChromePlus
+from ..services.utils import save_screenshot, wait_for_document_complete, get_with_requests
 
 logger = getLogger(__name__)
 
@@ -87,6 +86,7 @@ def collect_order_data(d, p, ol):
     :param list ol:
     :return:
     """
+    url = d.current_url
     for i in range(1, 30+1):
         try:
             order = get_order(d, p, i)
@@ -94,7 +94,20 @@ def collect_order_data(d, p, ol):
         except NoSuchElementException as e:
             # ページ途中で注文が無くなった場合
             logger.debug(str(e).splitlines()[0])
-    # TODO: 複数ページ対応
+    # TODO: 複数ページ対応(動作未確認)
+    if p['licensed']:
+        try:
+            # 「次へ」をクリック
+            save_screenshot(d, p)
+            click('次へ')
+        except LookupError:
+            # 「次へ」ボタンが無ければ終了
+            return
+        d.url_changes(url)
+        logger.info(f'{d.title} {d.current_url}')
+
+        # 次ページの処理
+        collect_order_data(d, p, ol)
 
 
 def get_receipt_pdf(d, p, ol):
@@ -126,23 +139,23 @@ def get_receipt_pdf(d, p, ol):
             except ElementNotInteractableException as e:
                 logger.info(f'領収書再発行のため、宛名を設定出来ません。設定されている宛名で領収書をダウンロードします: {i}')
                 editable = False
-            # 「発行する」ボタンを押す
-            save_screenshot(d, p)
-            d.click(button, By.XPATH)
-            # 宛名の確認 ポップアップ
             if editable:
-                sleep(1)
+                # 「発行する」ボタンを押す
                 save_screenshot(d, p)
-                click('OK')
-            # ダウンロード完了まで待つ
-            download_dir = Path(f'{d.screenshot_dir}{sep}')
-            for num in range(0, 120):
-                if any(download_dir.glob(f'*{i["注文番号"]}.pdf')):
-                    break
+                d.click(button, By.XPATH)
                 sleep(1)
-            if num == 119:
-                logger.info(f'領収書ダウンロード処理がタイムアウトしました。ダウンロードが未完了の場合は、手動でダウンロードし直してください: {i}')
-                d.save_screenshot(f'{p["ss_prefix"]}timeout_{i["注文番号"]}.png')
+                # この宛名で発行します ポップアップ
+                save_screenshot(d, p)
+                # click('OK')
+            # requestsで領収書のURLからpdfを直接ダウンロードする
+            pdf_url = (
+                f'https://order.my.rakuten.co.jp/purchasehistoryapi/invoice/download/'
+                f'?lang=ja&shop_id={i["注文番号"].split("-")[0]}'
+                f'&order_number={i["注文番号"]}'
+                f'&act=order_invoice&page=myorder&from_member_detail_page=true')
+            get_with_requests(
+                d, pdf_url, f'{d.screenshot_dir}{sep}{p["ss_prefix"]}receipt_{i["注文番号"]}.pdf'
+            )
         else:
             logger.info(f'領収書発行ボタンが見つからないため、領収書が発行出来ません: {i}')
             d.save_screenshot(f'{p["ss_prefix"]}notfound_{i["注文番号"]}.png')

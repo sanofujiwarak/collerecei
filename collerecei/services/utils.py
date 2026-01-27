@@ -5,6 +5,7 @@ from os import environ, sep
 from platform import system
 
 from helium import set_driver, kill_browser
+import requests
 
 from pselenium import TimeoutException, ChromeOptions, ChromePlus, Service, get_download_dir
 
@@ -31,7 +32,15 @@ def wait_for_document_complete(d: ChromePlus, timeout: int = 30):
         raise e
 
 
-def set_slow_network(d: ChromePlus):
+def get_with_requests(d: ChromePlus, url: str, download_path: str):
+    cookies = {c['name']: c['value'] for c in d.get_cookies()}
+    headers = {"User-Agent": d.execute_script("return navigator.userAgent")}
+    r = requests.get(url, cookies=cookies, headers=headers)
+    with open(download_path, "wb") as f:
+        f.write(r.content)
+
+
+def _set_slow_network(d: ChromePlus):
     # ネットワーク制限の設定
     kbps = 200
     d.execute_cdp_cmd('Network.emulateNetworkConditions', {
@@ -91,9 +100,9 @@ def __get_webdriver(download_dir) -> ChromePlus:
         'prefs',
         {
             'intl.accept_languages': 'ja,en-US;q=0.9,en;q=0.8',
-            'plugins.always_open_pdf_externally': True,
             "download.default_directory": get_download_dir(),
             "download.prompt_for_download": False,
+            'plugins.always_open_pdf_externally': True,
             "download.directory_upgrade": True,
             "safebrowsing.enabled": True
         }
@@ -114,7 +123,11 @@ def exec_selenium(manipulate, module_name, params):
     try:
         set_driver(d)
         if DEBUG:
-            set_slow_network(d)
+            _set_slow_network(d)
+        d.execute_cdp_cmd("Page.setDownloadBehavior", {
+            "behavior": "allow",
+            "downloadPath": d.download_dir
+        })
         manipulate(d, params)
     except Exception as e:
         d.save_screenshot(f'{module_name}_error.png')
