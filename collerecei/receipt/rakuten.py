@@ -182,7 +182,7 @@ def main(d, p):
     param = set_period(d, p)
 
     # 購入履歴一覧
-    d.set_window_size(900, 1800*2)
+    d.set_window_size(1920, 1080*4)
     go_to(f'https://order.my.rakuten.co.jp/purchase-history/order-list{param}')
     url = d.current_url
     logger.info(f'{d.title} {url}')
@@ -195,5 +195,6 @@ def main(d, p):
 
     # 領収書をダウンロード
     logger.info('領収書を保存します')
-    d.set_window_size(900, 1800)
+    # 「ログアウト」ボタンが「発行する」ボタンに重ならないように幅が必要
+    d.set_window_size(1920, 1080*2)
     get_receipt_pdf(d, p, ol)
