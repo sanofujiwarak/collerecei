@@ -3,6 +3,7 @@
 from datetime import datetime
 from logging import getLogger
 from time import sleep
+from urllib.parse import quote
 
 from helium import click, go_to
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
@@ -69,7 +70,7 @@ def get_order(d, p, i):
     :return: dict
     """
     r = {}
-    ol = f"/html/body/div/div/div[2]/div/div[1]/div/div[1]/div/div[2]/div/div[4]/div[1]/div[{i}]/div[1]/div/div/"
+    ol = f"/html/body/div[1]/div/div[2]/div/div[1]/div/div[1]/div/div[2]/div/div[4]/div[1]/div[{i}]/div[1]/div/div/"
     r["注文日"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[1]/span[2]').text
     r["注文番号"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[2]/span[2]').text
     r["注文詳細"] = d.find_element(By.XPATH, f'{ol}div[2]/div/div[1]/a').get_attribute('href')
@@ -87,25 +88,28 @@ def collect_order_data(d, p, ol):
     :return:
     """
     url = d.current_url
-    for i in range(1, 30+1):
+    for i in range(1, 25+1):
         try:
             order = get_order(d, p, i)
             ol.append(order)
         except NoSuchElementException as e:
             # ページ途中で注文が無くなった場合
             logger.debug(str(e).splitlines()[0])
-    # TODO: 複数ページ対応(動作未確認)
     if p['licensed']:
         try:
             # 「次へ」をクリック
             save_screenshot(d, p)
             click('次へ')
+            d.url_changes(url)
+            logger.info(f'{d.title} {d.current_url}')
         except LookupError:
             # 「次へ」ボタンが無ければ終了
             return
-        d.url_changes(url)
-        logger.info(f'{d.title} {d.current_url}')
+        except TimeoutException:
+            # 「次へ」ボタンが無反応なら終了
+            return
 
+        sleep(10)
         # 次ページの処理
         collect_order_data(d, p, ol)
 
@@ -129,7 +133,6 @@ def get_receipt_pdf(d, p, ol):
         if len(d.find_elements(By.XPATH, button)) > 0:
             d.clickable(button, By.XPATH)
             # 「宛名」を入力
-            editable = True
             try:
                 d.send_keys(
                     '/html/body/div/div/div[2]/div/div[1]/div/div[1]/div[5]/div/div[2]/div[1]/div/div[3]/div/div/input',
@@ -138,21 +141,13 @@ def get_receipt_pdf(d, p, ol):
                 )
             except ElementNotInteractableException as e:
                 logger.info(f'領収書再発行のため、宛名を設定出来ません。設定されている宛名で領収書をダウンロードします: {i}')
-                editable = False
-            if editable:
-                # 「発行する」ボタンを押す
-                save_screenshot(d, p)
-                d.click(button, By.XPATH)
-                sleep(1)
-                # この宛名で発行します ポップアップ
-                save_screenshot(d, p)
-                # click('OK')
             # requestsで領収書のURLからpdfを直接ダウンロードする
             pdf_url = (
                 f'https://order.my.rakuten.co.jp/purchasehistoryapi/invoice/download/'
                 f'?lang=ja&shop_id={i["注文番号"].split("-")[0]}'
                 f'&order_number={i["注文番号"]}'
-                f'&act=order_invoice&page=myorder&from_member_detail_page=true')
+                f'&act=order_invoice&page=myorder'
+                f'&receipt_name={quote(p["name"])}&from_member_detail_page=true')
             get_with_requests(
                 d, pdf_url, f'{d.screenshot_dir}{sep}{p["ss_prefix"]}receipt_{i["注文番号"]}.pdf'
             )
