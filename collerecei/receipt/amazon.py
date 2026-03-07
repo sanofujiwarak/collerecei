@@ -6,7 +6,8 @@ from os import sep
 from time import sleep
 import re
 
-from helium import click, go_to, write, S
+# from helium import click, go_to, write, S
+from helium import *
 from selenium.common.exceptions import NoSuchElementException
 
 from pselenium import By, TimeoutException, ChromePlus
@@ -98,7 +99,7 @@ def input_password(d, p) -> None:
     url = d.current_url
     logger.info(f'{d.title} {url}')
     try:
-        d.send_keys('ap_password', p['password'])
+        write(p['password'], into='パスワード')
         logger.info('パスワードを入力しました')
     except TimeoutException:
         solve_puzzle(d, p)
@@ -180,7 +181,7 @@ def login(d, p):
     url = d.current_url
     logger.info(f'{d.title} {url}')
     # Eメールまたは携帯電話番号
-    d.send_keys('ap_email', p['email'])
+    d.send_keys('ap_email_login', p['email'])
     logger.info('メールアドレスを入力しました')
     save_screenshot(d, p)
     click('次に進む')

@@ -5,7 +5,8 @@ from logging import getLogger
 from time import sleep
 from urllib.parse import quote
 
-from helium import click, go_to
+# from helium import click, go_to
+from helium import *
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 
 from pselenium import sep, By, TimeoutException, ChromePlus

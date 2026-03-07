@@ -2,7 +2,8 @@
 # Copyright (c) sanofujiwarak.
 from logging import getLogger
 
-from helium import click, go_to, select, write
+# from helium import click, go_to, select, write
+from helium import *
 from selenium.common.exceptions import NoSuchElementException
 
 from pselenium import sep, By, TimeoutException

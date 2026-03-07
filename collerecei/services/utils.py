@@ -4,10 +4,11 @@ from logging import getLogger
 from os import environ, sep
 from platform import system
 
-from helium import set_driver, kill_browser
+# from helium import set_driver, kill_browser
+from helium import *
 import requests
 
-from pselenium import TimeoutException, ChromeOptions, ChromePlus, Service, get_download_dir
+from pselenium import TimeoutException, Options, ChromePlus, Service, get_download_dir
 
 DEBUG = False
 
@@ -82,7 +83,7 @@ def __get_webdriver(download_dir) -> ChromePlus:
     environ.setdefault('APP_DOWNLOAD_DIR', download_dir)
     environ.setdefault('APP_SCREENSHOT_DIR', download_dir)
 
-    o = ChromeOptions()
+    o = Options()
     o.binary_location = __set_binary_location()
     o.headless = True
     o.add_argument('start-maximized')
