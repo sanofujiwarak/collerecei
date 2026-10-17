@@ -3,14 +3,13 @@
 from datetime import datetime
 from logging import getLogger
 from time import sleep
-from urllib.parse import quote
 
 # from helium import click, go_to
 from helium import *
 from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException
 
 from pselenium import sep, By, TimeoutException, ChromePlus
-from ..services.utils import save_screenshot, wait_for_document_complete, get_with_requests
+from ..services.utils import save_screenshot, wait_for_document_complete, get_with_requests, find_element_with_text
 
 logger = getLogger(__name__)
 
@@ -71,9 +70,9 @@ def get_order(d, p, i):
     :return: dict
     """
     r = {}
-    ol = f"/html/body/div[1]/div/div[2]/div/div[1]/div/div[1]/div/div[2]/div/div[4]/div[1]/div[{i}]/div[1]/div/div/"
-    r["注文日"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[1]/span[2]').text
-    r["注文番号"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[2]/span[2]').text
+    ol = f"/html/body/div[1]/div/div[2]/div/div[1]/div/div/div/div[2]/div/div[4]/div[1]/div[{i}]/div[1]/div/div/"
+    r["注文日"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[1]/span').text.replace('注文日：', '')
+    r["注文番号"] = d.find_element(By.XPATH, f'{ol}div[1]/div/div/div/div[2]/div[2]/div[2]/span').text.replace('注文番号：', '')
     r["注文詳細"] = d.find_element(By.XPATH, f'{ol}div[2]/div/div[1]/a').get_attribute('href')
     r["注文詳細"] = r["注文詳細"] if "order.my.rakuten" in r["注文詳細"] else d.find_element(By.XPATH, f'{ol}div[2]/div/div[2]/a').get_attribute('href')
     logger.info(r)
@@ -91,6 +90,7 @@ def collect_order_data(d, p, ol):
     url = d.current_url
     for i in range(1, 25+1):
         try:
+            logger.debug(i)
             order = get_order(d, p, i)
             ol.append(order)
         except NoSuchElementException as e:
@@ -129,26 +129,28 @@ def get_receipt_pdf(d, p, ol):
         logger.info(f'{d.title} {url}')
         # ページの読み込み完了を待つ
         wait_for_document_complete(d)
-        button = '/html/body/div/div/div[2]/div/div[1]/div/div[1]/div[5]/div/div[2]/div[2]/button'
+        # 「発行する」ボタンelement
+        button = find_element_with_text(d, '発行する', 'button')
         save_screenshot(d, p)
-        if len(d.find_elements(By.XPATH, button)) > 0:
-            d.clickable(button, By.XPATH)
+        if button:
             # 「宛名」を入力
+            editable = True
             try:
                 d.send_keys(
-                    '/html/body/div/div/div[2]/div/div[1]/div/div[1]/div[5]/div/div[2]/div[1]/div/div[3]/div/div/input',
+                    '/html/body/div[1]/div/div[2]/div/div[1]/div/div/div[5]/div/div[2]/div[1]/div/div[3]/div/div/input',
                     p['name'],
                     By.XPATH
                 )
             except ElementNotInteractableException as e:
                 logger.info(f'領収書再発行のため、宛名を設定出来ません。設定されている宛名で領収書をダウンロードします: {i}')
+                editable = False
             # requestsで領収書のURLからpdfを直接ダウンロードする
             pdf_url = (
                 f'https://order.my.rakuten.co.jp/purchasehistoryapi/invoice/download/'
                 f'?lang=ja&shop_id={i["注文番号"].split("-")[0]}'
                 f'&order_number={i["注文番号"]}'
-                f'&act=order_invoice&page=myorder'
-                f'&receipt_name={quote(p["name"])}&from_member_detail_page=true')
+                f'&act=order_invoice&page=myorder&from_member_detail_page=true'
+                f'&receipt_name={p["name"]}')
             get_with_requests(
                 d, pdf_url, f'{d.screenshot_dir}{sep}{p["ss_prefix"]}receipt_{i["注文番号"]}.pdf'
             )
@@ -171,7 +173,7 @@ def main(d, p):
     url = d.current_url
     logger.info(f'{d.title} {url}')
     save_screenshot(d, p)
-    d.click('/html/body/div[1]/div[5]/div/div/div/div[2]/div[5]/a', By.XPATH, 30)
+    click('購入履歴')
     d.url_changes(url)
 
     # 期間絞り込み用リクエストパラメータの設定

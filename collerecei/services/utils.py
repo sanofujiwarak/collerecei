@@ -6,6 +6,8 @@ from platform import system
 
 # from helium import set_driver, kill_browser
 from helium import *
+from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 import requests
 
 from pselenium import TimeoutException, Options, ChromePlus, Service, get_download_dir
@@ -34,12 +36,24 @@ def wait_for_document_complete(d: ChromePlus, timeout: int = 30):
 
 
 def get_with_requests(d: ChromePlus, url: str, download_path: str):
+    """requestsを使用してGETリクエストで応答を取得する"""
     cookies = {c['name']: c['value'] for c in d.get_cookies()}
     headers = {"User-Agent": d.execute_script("return navigator.userAgent")}
     r = requests.get(url, cookies=cookies, headers=headers)
     with open(download_path, "wb") as f:
         f.write(r.content)
 
+
+def find_element_with_text(d: ChromePlus, text: str, tag: str = "*") -> WebElement | None:
+    """文字列から要素を取得する"""
+    return d.wait_until(
+        lambda lf: next(
+            (e for e in
+             lf.find_elements(By.XPATH, f"//{tag}[normalize-space(.)='{text}']")
+             if e.is_displayed() and e.is_enabled()),
+            None
+        )
+    )
 
 def _set_slow_network(d: ChromePlus):
     # ネットワーク制限の設定
@@ -123,8 +137,8 @@ def exec_selenium(manipulate, module_name, params):
     d = __get_webdriver(params['store_path'])
     try:
         set_driver(d)
-        if DEBUG:
-            _set_slow_network(d)
+        # if DEBUG:
+        #     _set_slow_network(d)
         d.execute_cdp_cmd("Page.setDownloadBehavior", {
             "behavior": "allow",
             "downloadPath": d.download_dir
