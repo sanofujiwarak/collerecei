@@ -68,7 +68,7 @@ def solve_puzzle(d, p, field: str = '上記の文字を入力してください'
             logger.debug(i)
             d.execute_script(
                 "arguments[0].click();",
-                d.find_element(By.XPATH, f'/html/body/div[1]/div[2]/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/form/div[2]/div/div[2]/canvas/button[{i}]')
+                d.find_element(By.XPATH, f'/html/body/div[1]/div[2]/div/div/div/div[2]/div/div/div/div/div/div/div[2]/div/div/form/div[2]/div/div[2]/button[{i}]')
             )
             sleep(0.5)
         logger.info('画像を選択しました')
@@ -78,14 +78,15 @@ def solve_puzzle(d, p, field: str = '上記の文字を入力してください'
         # d.clickable timeout時(メールアドレス不正)もここで気付ける
         n = next(p["iter"])
         d.save_screenshot(f'{p["ss_prefix"]}{n}.png')
-        puzzle = input(
-            f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
-            f'を確認し、文字と数字を入力してください -> '
-        )
-        write(puzzle, into=field)
-        logger.info('文字列を入力しました')
-        save_screenshot(d, p)
-        click('続行')
+        # puzzle = input(
+        #     f'{p["store_path"]}{sep}{p["ss_prefix"]}{n}.png '
+        #     f'を確認し、文字と数字を入力してください -> '
+        # )
+        # write(puzzle, into=field)
+        # logger.info('文字列を入力しました')
+        # save_screenshot(d, p)
+        # click('続行')
+        click('次に進む')
     finally:
         sleep(2)
 
